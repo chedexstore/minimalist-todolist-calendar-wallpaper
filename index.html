@@ -472,6 +472,17 @@
             transform: translateY(-1px);
         }
 
+        .modal-button.danger {
+            background: #ff4444;
+            color: white;
+            border: 1px solid #cc0000;
+        }
+
+        .modal-button.danger:hover {
+            background: #cc0000;
+            transform: translateY(-1px);
+        }
+
         /* Animation for theme transition */
         * {
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
@@ -552,39 +563,54 @@
         </div>
     </div>
 
+    <!-- Modal for editing/deleting events -->
+    <div class="modal" id="event-edit-modal">
+        <div class="modal-content">
+            <h3 class="modal-header">Edit Event</h3>
+            <input type="text" class="modal-input" id="edit-event-title" placeholder="Event title">
+            <div class="modal-buttons">
+                <button class="modal-button danger" onclick="deleteCurrentEvent()">Delete</button>
+                <button class="modal-button secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-button primary" onclick="saveEditedEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentDate = new Date();
         let selectedDate = null;
         let events = {};
         let currentTheme = 'light';
+        let currentEventIndex = -1;
+        let currentEventDate = '';
 
         // Philippine Holidays
         const philippineHolidays = {
-    // Regular Holidays
-    '01-01': "New Year's Day",
-    '04-01': "Eid'l Fitr (Feast of Ramadhan)",
-    '04-09': "Araw ng Kagitingan",
-    '04-17': "Maundy Thursday",
-    '04-18': "Good Friday",
-    '05-01': "Labor Day",
-    '06-06': "Eidul Adha (Feast of Sacrifice)",
-    '06-12': "Independence Day",
-    '08-25': "National Heroes Day",
-    '11-30': "Bonifacio Day",
-    '12-25': "Christmas Day",
-    '12-30': "Rizal Day",
+            // Regular Holidays
+            '01-01': "New Year's Day",
+            '04-01': "Eid'l Fitr (Feast of Ramadhan)",
+            '04-09': "Araw ng Kagitingan",
+            '04-17': "Maundy Thursday",
+            '04-18': "Good Friday",
+            '05-01': "Labor Day",
+            '06-06': "Eidul Adha (Feast of Sacrifice)",
+            '06-12': "Independence Day",
+            '08-25': "National Heroes Day",
+            '11-30': "Bonifacio Day",
+            '12-25': "Christmas Day",
+            '12-30': "Rizal Day",
 
-    // Special (Non-Working) Holidays
-    '01-29': "Chinese New Year",
-    '08-21': "Ninoy Aquino Day",
-    '11-01': "All Saints' Day",
-    '12-08': "Feast of the Immaculate Conception of Mary",
-    '12-24': "Christmas Eve",
-    '12-31': "Last Day of the Year",
-    '04-19': "Black Saturday",
-    '05-12': "National and Local Elections",
-    '10-31': "All Saints' Day Eve"
-};
+            // Special (Non-Working) Holidays
+            '01-29': "Chinese New Year",
+            '08-21': "Ninoy Aquino Day",
+            '11-01': "All Saints' Day",
+            '12-08': "Feast of the Immaculate Conception of Mary",
+            '12-24': "Christmas Eve",
+            '12-31': "Last Day of the Year",
+            '04-19': "Black Saturday",
+            '05-12': "National and Local Elections",
+            '10-31': "All Saints' Day Eve"
+        };
 
         function getPhilippineHoliday(date) {
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -696,7 +722,7 @@
                         eventDiv.textContent = event;
                         eventDiv.onclick = (e) => {
                             e.stopPropagation();
-                            deleteEvent(dateString, index);
+                            openEditModal(dateString, index);
                         };
                         dayCell.appendChild(eventDiv);
                     });
@@ -743,13 +769,39 @@
             }
         }
 
-        function deleteEvent(dateString, index) {
-            if (confirm('Delete this event?')) {
-                events[dateString].splice(index, 1);
-                if (events[dateString].length === 0) {
-                    delete events[dateString];
+        function openEditModal(dateString, index) {
+            currentEventDate = dateString;
+            currentEventIndex = index;
+            document.getElementById('edit-event-title').value = events[dateString][index];
+            document.getElementById('event-edit-modal').style.display = 'block';
+            document.getElementById('edit-event-title').focus();
+        }
+
+        function closeEditModal() {
+            document.getElementById('event-edit-modal').style.display = 'none';
+            document.getElementById('edit-event-title').value = '';
+            currentEventDate = '';
+            currentEventIndex = -1;
+        }
+
+        function saveEditedEvent() {
+            const newTitle = document.getElementById('edit-event-title').value.trim();
+            if (newTitle && currentEventDate && currentEventIndex !== -1) {
+                events[currentEventDate][currentEventIndex] = newTitle;
+                generateCalendar();
+                closeEditModal();
+                saveEvents();
+            }
+        }
+
+        function deleteCurrentEvent() {
+            if (currentEventDate && currentEventIndex !== -1) {
+                events[currentEventDate].splice(currentEventIndex, 1);
+                if (events[currentEventDate].length === 0) {
+                    delete events[currentEventDate];
                 }
                 generateCalendar();
+                closeEditModal();
                 saveEvents();
             }
         }
@@ -827,10 +879,8 @@
         }
 
         function clearAllTasks() {
-            if (confirm('Clear all tasks?')) {
-                document.getElementById('todo-list').innerHTML = '';
-                localStorage.removeItem('calendarTasks');
-            }
+            document.getElementById('todo-list').innerHTML = '';
+            localStorage.removeItem('calendarTasks');
         }
 
         // Load current date from localStorage
@@ -847,12 +897,18 @@
             if (event.target === modal) {
                 closeModal();
             }
+            
+            const editModal = document.getElementById('event-edit-modal');
+            if (event.target === editModal) {
+                closeEditModal();
+            }
         }
 
         // Close modal with Escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeModal();
+                closeEditModal();
             }
         });
 
