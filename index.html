@@ -232,20 +232,20 @@
         }
 
         .event {
-            font-size: 20px; /* Increased from 18px */
-            background: var(--event-bg);
-            color: var(--event-text);
-            padding: 8px 10px; /* Increased padding */
-            border-radius: 4px;
-            margin-bottom: 4px;
-            cursor: pointer;
-            line-height: 1.3;
-            width: 100%;
-            white-space: normal;
-            word-wrap: break-word;
-            transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
-        }
+    font-size: 20px; /* Increased from 18px */
+    background: var(--event-bg);
+    color: var(--event-text);
+    padding: 8px 10px; /* Increased padding */
+    border-radius: 4px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    line-height: 1.3;
+    width: 100%;
+    white-space: normal;
+    word-wrap: break-word;
+    transition: all 0.3s ease;
+    /* Remove this line: border: 1px solid var(--border-color); */
+}
 
         .event:hover {
             background: var(--event-hover);
