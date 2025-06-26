@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Calendar</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        :root {
+            /* Light mode colors (original warm theme) */
+            --bg-primary: #f1f1e6;
+            --bg-secondary: #faf4e8;
+            --bg-tertiary: #fff;
+            --bg-accent: #d8c8a9;
+            --text-primary: #3e3a36;
+            --text-secondary: #6c6048;
+            --text-muted: #8b6f47;
+            --border-color: #d8c8a9;
+            --border-light: #e6dcc4;
+            --hover-bg: #e6dcc4;
+            --today-bg: #e8dfc8;
+            --today-border: #c5b59a;
+            --today-highlight: #c5b59a;
+            --event-bg: #ffffff;
+            --event-hover: #f0f0f0;
+            --event-text: #000000;
+            --modal-overlay: rgba(62, 58, 54, 0.5);
+        }
+
+        [data-theme="dark"] {
+            /* Dark mode colors */
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --bg-accent: #4a4a4a;
+            --text-primary: #e8e6e1;
+            --text-secondary: #c4c1b8;
+            --text-muted: #a09888;
+            --border-color: #4a4a4a;
+            --border-light: #555;
+            --hover-bg: #454545;
+            --today-bg: #2d4a3a;
+            --today-border: #4a6b5a;
+            --today-highlight: #4a6b5a;
+            --event-bg: #3a3a3a;
+            --event-hover: #4a4a4a;
+            --event-text: #e8e6e1;
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 22px; /* Increased base font size */
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 360px 1fr; /* Wider sidebar for bigger fonts */
+            height: 100vh;
+            width: 100vw;
+            background: var(--bg-tertiary);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 28px;
+            overflow-y: auto;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .clock-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            font-size: 24px;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .calendar-container {
+            padding: 28px;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+            transition: background-color 0.3s ease;
+        }
+
+        .month-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 36px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+            transition: border-color 0.3s ease;
+        }
+
+        .month-nav {
+            background: none;
+            border: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            font-size: 28px;
+        }
+
+        .month-nav:hover {
+            background: var(--hover-bg);
+            transform: scale(1.05);
+        }
+
+        .month-title {
+            font-size: 42px; /* Increased from 36px */
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+            min-width: 320px;
+            text-align: center;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            height: calc(100vh - 150px);
+            transition: background-color 0.3s ease;
+        }
+
+        .day-header {
+            background: var(--bg-secondary);
+            padding: 24px 8px;
+            text-align: center;
+            font-size: 24px; /* Increased from 20px */
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .day-cell {
+            background: var(--bg-tertiary);
+            padding: 14px;
+            min-height: 140px;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .day-cell:hover {
+            background: var(--hover-bg);
+        }
+
+        .day-number {
+            font-size: 24px; /* Increased from 20px */
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+            position: relative;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .day-number.today {
+            background: var(--today-highlight);
+            color: white;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .event {
+            font-size: 20px; /* Increased from 18px */
+            background: var(--event-bg);
+            color: var(--event-text);
+            padding: 8px 10px; /* Increased padding */
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            line-height: 1.3;
+            width: 100%;
+            white-space: normal;
+            word-wrap: break-word;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .event:hover {
+            background: var(--event-hover);
+            transform: scale(1.02);
+        }
+
+        .holiday {
+            color: #ff0000 !important;
+            font-weight: 600 !important;
+            text-shadow: 0 0 2px rgba(255, 0, 0, 0.3);
+        }
+
+        .holiday-indicator {
+            color: #ff0000 !important;
+            font-size: 18px;
+            margin-top: 2px;
+            text-align: center;
+            font-weight: 600;
+            text-shadow: 0 0 2px rgba(255, 0, 0, 0.3);
+        }
+
+        .todo-section {
+            margin-bottom: 20px;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .todo-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .section-title {
+            font-size: 28px; /* Increased from 24px */
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+            text-align: center;
+        }
+
+        .todo-input {
+            width: 100%;
+            padding: 18px; /* Increased padding */
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 22px; /* Increased from 20px */
+            margin-bottom: 18px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: inherit;
+            text-align: left;
+        }
+
+        .todo-input:focus {
+            outline: none;
+            border-color: var(--event-bg);
+            background: var(--bg-tertiary);
+        }
+
+        .todo-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .todo-list {
+            list-style: none;
+            margin-bottom: 18px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            padding-left: 0;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0; /* Increased padding */
+            border-bottom: 2px solid var(--border-light);
+            transition: border-color 0.3s ease;
+            text-align: left;
+        }
+
+        .todo-item:last-child {
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .todo-checkbox {
+            margin-right: 14px;
+            width: 22px; /* Larger checkbox */
+            height: 22px;
+            accent-color: var(--event-bg);
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 22px; /* Increased from 20px */
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+            text-align: left;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .clear-button {
+            width: 100%;
+            padding: 14px 20px; /* Increased padding */
+            background: var(--bg-accent);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 22px; /* Increased from 20px */
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .clear-button:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--modal-overlay);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-tertiary);
+            padding: 32px; /* Increased padding */
+            border-radius: 8px;
+            width: 500px; /* Wider */
+            max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .modal-header {
+            font-size: 28px; /* Increased from 24px */
+            font-weight: 600;
+            margin-bottom: 22px;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 18px; /* Increased padding */
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 22px; /* Increased from 20px */
+            margin-bottom: 22px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--event-bg);
+        }
+
+        .modal-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-button {
+            padding: 14px 28px; /* Increased padding */
+            border: none;
+            border-radius: 6px;
+            font-size: 22px; /* Increased from 20px */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .modal-button.primary {
+            background: var(--event-bg);
+            color: var(--event-text);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-button.primary:hover {
+            background: var(--event-hover);
+            transform: translateY(-1px);
+        }
+
+        .modal-button.secondary {
+            background: var(--bg-accent);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-button.secondary:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        /* Animation for theme transition */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                height: auto;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            
+            .calendar-container {
+                height: auto;
+                min-height: 60vh;
+            }
+            
+            .calendar {
+                height: auto;
+                min-height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="clock-container">
+                    <button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle">
+                        🌙
+                    </button>
+                    <h2 class="section-title" id="live-time" style="margin-bottom: 0;">Loading time...</h2>
+                    <button class="theme-toggle" onclick="toggleTheme()" style="visibility: hidden;">
+                        🌙
+                    </button>
+                </div>
+            </div>
+
+            <div class="todo-section">
+                <h2 class="section-title">To Do List</h2>
+                <div class="todo-container">
+                    <input type="text" class="todo-input" id="todo-input" placeholder="Add a new task...">
+                    <ul class="todo-list" id="todo-list"></ul>
+                    <button class="clear-button" onclick="clearAllTasks()">Clear All Tasks</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-container">
+            <div class="month-header">
+                <button class="month-nav" onclick="prevMonth()">‹</button>
+                <h1 class="month-title" id="month-title">February 2025</h1>
+                <button class="month-nav" onclick="nextMonth()">›</button>
+            </div>
+            <div class="calendar" id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- Modal for adding events -->
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <h3 class="modal-header">Add Event</h3>
+            <input type="text" class="modal-input" id="event-title" placeholder="Event title">
+            <div class="modal-buttons">
+                <button class="modal-button secondary" onclick="closeModal()">Cancel</button>
+                <button class="modal-button primary" onclick="addEvent()">Add Event</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDate = null;
+        let events = {};
+        let currentTheme = 'light';
+
+        // Philippine Holidays
+        const philippineHolidays = {
+    // Regular Holidays
+    '01-01': "New Year's Day",
+    '04-01': "Eid'l Fitr (Feast of Ramadhan)",
+    '04-09': "Araw ng Kagitingan",
+    '04-17': "Maundy Thursday",
+    '04-18': "Good Friday",
+    '05-01': "Labor Day",
+    '06-06': "Eidul Adha (Feast of Sacrifice)",
+    '06-12': "Independence Day",
+    '08-25': "National Heroes Day",
+    '11-30': "Bonifacio Day",
+    '12-25': "Christmas Day",
+    '12-30': "Rizal Day",
+
+    // Special (Non-Working) Holidays
+    '01-29': "Chinese New Year",
+    '08-21': "Ninoy Aquino Day",
+    '11-01': "All Saints' Day",
+    '12-08': "Feast of the Immaculate Conception of Mary",
+    '12-24': "Christmas Eve",
+    '12-31': "Last Day of the Year",
+    '04-19': "Black Saturday",
+    '05-12': "National and Local Elections",
+    '10-31': "All Saints' Day Eve"
+};
+
+        function getPhilippineHoliday(date) {
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const key = `${month}-${day}`;
+            return philippineHolidays[key];
+        }
+
+        // Theme management
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? '☀️' : '🌙';
+            
+            // Store theme preference in localStorage
+            localStorage.setItem('calendarTheme', currentTheme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('calendarTheme') || 'light';
+            currentTheme = savedTheme;
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? '☀️' : '🌙';
+        }
+
+        function updateMonth() {
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('month-title').textContent = 
+                `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+            generateCalendar();
+            
+            // Save current month/year to localStorage
+            localStorage.setItem('calendarCurrentDate', currentDate.toISOString());
+        }
+
+        function prevMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateMonth();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateMonth();
+        }
+
+        function generateCalendar() {
+            const calendar = document.getElementById('calendar');
+            const today = new Date();
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            calendar.innerHTML = `
+                <div class="day-header">Sun</div>
+                <div class="day-header">Mon</div>
+                <div class="day-header">Tue</div>
+                <div class="day-header">Wed</div>
+                <div class="day-header">Thu</div>
+                <div class="day-header">Fri</div>
+                <div class="day-header">Sat</div>
+            `;
+
+            const daysInMonth = lastDay.getDate();
+            const startDayOfWeek = firstDay.getDay();
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < startDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell';
+                calendar.appendChild(emptyCell);
+            }
+
+            // Add days of the current month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                
+                const dateString = date.toISOString().split('T')[0];
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number';
+                dayNumber.textContent = day;
+                
+                // Check if it's today
+                if (date.toDateString() === today.toDateString()) {
+                    dayNumber.classList.add('today');
+                }
+                
+                // Check for Philippine holidays
+                const holiday = getPhilippineHoliday(date);
+                if (holiday) {
+                    dayNumber.classList.add('holiday');
+                    const holidayIndicator = document.createElement('div');
+                    holidayIndicator.className = 'holiday-indicator';
+                    holidayIndicator.textContent = holiday;
+                    dayCell.appendChild(dayNumber);
+                    dayCell.appendChild(holidayIndicator);
+                } else {
+                    dayCell.appendChild(dayNumber);
+                }
+
+                // Add events
+                if (events[dateString]) {
+                    events[dateString].forEach((event, index) => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = 'event';
+                        eventDiv.textContent = event;
+                        eventDiv.onclick = (e) => {
+                            e.stopPropagation();
+                            deleteEvent(dateString, index);
+                        };
+                        dayCell.appendChild(eventDiv);
+                    });
+                }
+
+                dayCell.onclick = () => openEventModal(dateString);
+                calendar.appendChild(dayCell);
+            }
+
+            // Add empty cells after the last day of the month to complete the grid
+            const totalDisplayedCells = startDayOfWeek + daysInMonth;
+            const remainingCells = 7 - (totalDisplayedCells % 7);
+            if (remainingCells < 7) {
+                for (let i = 0; i < remainingCells; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'day-cell';
+                    calendar.appendChild(emptyCell);
+                }
+            }
+        }
+
+        function openEventModal(dateString) {
+            selectedDate = dateString;
+            document.getElementById('event-modal').style.display = 'block';
+            document.getElementById('event-title').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('event-modal').style.display = 'none';
+            document.getElementById('event-title').value = '';
+            selectedDate = null;
+        }
+
+        function addEvent() {
+            const title = document.getElementById('event-title').value.trim();
+            if (title && selectedDate) {
+                if (!events[selectedDate]) {
+                    events[selectedDate] = [];
+                }
+                events[selectedDate].push(title);
+                generateCalendar();
+                closeModal();
+                saveEvents();
+            }
+        }
+
+        function deleteEvent(dateString, index) {
+            if (confirm('Delete this event?')) {
+                events[dateString].splice(index, 1);
+                if (events[dateString].length === 0) {
+                    delete events[dateString];
+                }
+                generateCalendar();
+                saveEvents();
+            }
+        }
+
+        // Save events to localStorage
+        function saveEvents() {
+            localStorage.setItem('calendarEvents', JSON.stringify(events));
+        }
+
+        // Load events from localStorage
+        function loadEvents() {
+            const savedEvents = localStorage.getItem('calendarEvents');
+            if (savedEvents) {
+                events = JSON.parse(savedEvents);
+            }
+        }
+
+        // Todo list functionality
+        document.getElementById('todo-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        function addTask() {
+            const input = document.getElementById('todo-input');
+            const taskText = input.value.trim();
+            if (taskText) {
+                const ul = document.getElementById('todo-list');
+                const li = document.createElement('li');
+                li.className = 'todo-item';
+                li.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox" onchange="saveTasks()">
+                    <span class="todo-text">${taskText}</span>
+                `;
+                ul.appendChild(li);
+                input.value = '';
+                saveTasks();
+            }
+        }
+
+        function saveTasks() {
+            const tasks = [];
+            document.querySelectorAll('.todo-item').forEach(item => {
+                const checkbox = item.querySelector('.todo-checkbox');
+                const text = item.querySelector('.todo-text').textContent;
+                tasks.push({ text, checked: checkbox.checked });
+                
+                if (checkbox.checked) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+            });
+            
+            // Save to localStorage instead of window property
+            localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+        }
+
+        function loadTasks() {
+            const savedTasks = localStorage.getItem('calendarTasks');
+            const tasks = savedTasks ? JSON.parse(savedTasks) : [];
+            const ul = document.getElementById('todo-list');
+            ul.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = `todo-item ${task.checked ? 'completed' : ''}`;
+                li.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox" ${task.checked ? 'checked' : ''} onchange="saveTasks()">
+                    <span class="todo-text">${task.text}</span>
+                `;
+                ul.appendChild(li);
+            });
+        }
+
+        function clearAllTasks() {
+            if (confirm('Clear all tasks?')) {
+                document.getElementById('todo-list').innerHTML = '';
+                localStorage.removeItem('calendarTasks');
+            }
+        }
+
+        // Load current date from localStorage
+        function loadCurrentDate() {
+            const savedDate = localStorage.getItem('calendarCurrentDate');
+            if (savedDate) {
+                currentDate = new Date(savedDate);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('event-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Live time update (24-hour format)
+        function updateLiveTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timeString = hours + ':' + minutes + ':' + seconds;
+            const liveTimeEl = document.getElementById('live-time');
+            if (liveTimeEl) liveTimeEl.textContent = timeString;
+        }
+        setInterval(updateLiveTime, 1000);
+        updateLiveTime();
+
+        // Initialize
+        loadTheme();
+        loadCurrentDate();
+        loadEvents();
+        updateMonth();
+        loadTasks();
+    </script>
+</body>
+</html>
