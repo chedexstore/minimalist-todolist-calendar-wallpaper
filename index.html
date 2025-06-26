@@ -912,16 +912,21 @@
             }
         });
 
-        // Live time update (24-hour format)
         function updateLiveTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const timeString = hours + ':' + minutes + ':' + seconds;
-            const liveTimeEl = document.getElementById('live-time');
-            if (liveTimeEl) liveTimeEl.textContent = timeString;
-        }
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    
+    const timeString = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+    const liveTimeEl = document.getElementById('live-time');
+    if (liveTimeEl) liveTimeEl.textContent = timeString;
+}
         setInterval(updateLiveTime, 1000);
         updateLiveTime();
 
